@@ -16,17 +16,24 @@
   .name { font-weight: 600; }
   .del { background: none; color: #c44; font-size: 0.85rem; padding: 4px; }
   .empty { color: #999; text-align: center; padding: 24px 0; }
+  /* 入力中のタグ（チップ）表示 */
+  .pending-tags { display: flex; flex-wrap: wrap; gap: 6px; margin: 2px 0 10px; }
+  .chip { display: inline-flex; align-items: center; gap: 4px; font-size: 0.8rem; background: #eef6f1; color: #2a6; padding: 4px 6px 4px 10px; border-radius: 999px; }
+  .chip-x { background: none; color: #2a6; border: none; font-size: 1rem; line-height: 1; padding: 0 2px; cursor: pointer; border-radius: 999px; }
+  .chip-x:hover { color: #c44; }
 </style>
 </head>
 <body>
   <h1>献立メモ</h1>
   <input id="name" placeholder="料理名（例：肉じゃが）">
-  <input id="tags" placeholder="タグをスペース区切りで（例：主菜 和食 長男OK）">
+  <input id="tags" placeholder="タグを入力してEnter（例：主菜）" onkeydown="onTagKey(event)">
+  <div id="pendingTags" class="pending-tags"></div>
   <button onclick="addDish()">登録する</button>
   <ul id="list"></ul>
-
 <script>
   const KEY = 'kondate.dishes';
+  // 登録前に「たまっている」タグ。確定するとここに入りチップ表示される。
+  let pendingTags = [];
 
   function load() {
     try { return JSON.parse(localStorage.getItem(KEY)) || []; }
@@ -36,19 +43,62 @@
     localStorage.setItem(KEY, JSON.stringify(dishes));
   }
 
+  // タグ欄でEnter → 入力をタグとして確定
+  function onTagKey(e) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      commitTags();
+    }
+  }
+
+  // タグ欄の現在の入力を pendingTags に取り込む（スペース区切りもまとめて受け付ける）
+  function commitTags() {
+    const tagsEl = document.getElementById('tags');
+    const parts = tagsEl.value.trim().split(/\s+/).filter(Boolean);
+    parts.forEach(t => {
+      if (!pendingTags.includes(t)) pendingTags.push(t); // 同じタグの重複は無視
+    });
+    tagsEl.value = '';
+    renderPendingTags();
+  }
+
+  function removePendingTag(index) {
+    pendingTags.splice(index, 1);
+    renderPendingTags();
+  }
+
+  function renderPendingTags() {
+    const wrap = document.getElementById('pendingTags');
+    wrap.innerHTML = '';
+    pendingTags.forEach((t, i) => {
+      const chip = document.createElement('span');
+      chip.className = 'chip';
+      const label = document.createElement('span');
+      label.textContent = t;
+      chip.appendChild(label);
+      const x = document.createElement('button');
+      x.type = 'button';
+      x.className = 'chip-x';
+      x.textContent = '×';
+      x.setAttribute('aria-label', t + ' を削除');
+      x.onclick = () => removePendingTag(i);
+      chip.appendChild(x);
+      wrap.appendChild(chip);
+    });
+  }
+
   function addDish() {
     const nameEl = document.getElementById('name');
-    const tagsEl = document.getElementById('tags');
     const name = nameEl.value.trim();
     if (!name) { alert('料理名を入れてください'); return; }
-    const tags = tagsEl.value.trim().split(/\s+/).filter(Boolean);
-
+    commitTags(); // Enter未押下で残っている入力も取りこぼさず保存
+    const tags = pendingTags.slice();
     const dishes = load();
     dishes.push({ id: Date.now(), name, tags });
     save(dishes);
-
     nameEl.value = '';
-    tagsEl.value = '';
+    pendingTags = [];      // たまっていたタグをクリア
+    renderPendingTags();   // チップ表示もクリア
     nameEl.focus();
     render();
   }

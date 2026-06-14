@@ -26,7 +26,7 @@
 <body>
   <h1>献立メモ</h1>
   <input id="name" placeholder="料理名（例：肉じゃが）">
-  <input id="tags" placeholder="タグを入力してEnter（例：主菜）" onkeydown="onTagKey(event)">
+  <input id="tags" placeholder="タグを入力してEnter（例：鶏 むね肉）" onkeydown="onTagKey(event)">
   <div id="pendingTags" class="pending-tags"></div>
   <button onclick="addDish()">登録する</button>
   <ul id="list"></ul>
@@ -51,13 +51,14 @@
     }
   }
 
-  // タグ欄の現在の入力を pendingTags に取り込む（スペース区切りもまとめて受け付ける）
+  // タグ欄の現在の入力を pendingTags に取り込む。
+  // 入力全体を1個のタグとして確定する（スペースを含むタグもそのまま登録できる）。
   function commitTags() {
     const tagsEl = document.getElementById('tags');
-    const parts = tagsEl.value.trim().split(/\s+/).filter(Boolean);
-    parts.forEach(t => {
-      if (!pendingTags.includes(t)) pendingTags.push(t); // 同じタグの重複は無視
-    });
+    const tag = tagsEl.value.trim();
+    if (tag && !pendingTags.includes(tag)) {
+      pendingTags.push(tag); // 同じタグの重複は無視
+    }
     tagsEl.value = '';
     renderPendingTags();
   }

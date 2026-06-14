@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>献立メモ</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 600px; margin: 0 auto; padding: 16px; background: #fafaf7; color: #222; }
+  h1 { font-size: 1.3rem; }
+  input { width: 100%; padding: 10px; margin: 6px 0; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; font-size: 1rem; }
+  button { padding: 10px 16px; border: none; border-radius: 8px; background: #3a7; color: #fff; font-size: 1rem; cursor: pointer; }
+  ul { list-style: none; padding: 0; }
+  li { background: #fff; border: 1px solid #eee; border-radius: 8px; padding: 10px 12px; margin: 8px 0; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+  .tag { font-size: 0.75rem; background: #eef6f1; color: #2a6; padding: 2px 8px; border-radius: 999px; }
+  .name { font-weight: 600; }
+  .del { background: none; color: #c44; font-size: 0.85rem; padding: 4px; }
+  .empty { color: #999; text-align: center; padding: 24px 0; }
+</style>
+</head>
+<body>
+  <h1>献立メモ</h1>
+  <input id="name" placeholder="料理名（例：肉じゃが）">
+  <input id="tags" placeholder="タグをスペース区切りで（例：主菜 和食 長男OK）">
+  <button onclick="addDish()">登録する</button>
+  <ul id="list"></ul>
+
+<script>
+  const KEY = 'kondate.dishes';
+
+  function load() {
+    try { return JSON.parse(localStorage.getItem(KEY)) || []; }
+    catch { return []; }
+  }
+  function save(dishes) {
+    localStorage.setItem(KEY, JSON.stringify(dishes));
+  }
+
+  function addDish() {
+    const nameEl = document.getElementById('name');
+    const tagsEl = document.getElementById('tags');
+    const name = nameEl.value.trim();
+    if (!name) { alert('料理名を入れてください'); return; }
+    const tags = tagsEl.value.trim().split(/\s+/).filter(Boolean);
+
+    const dishes = load();
+    dishes.push({ id: Date.now(), name, tags });
+    save(dishes);
+
+    nameEl.value = '';
+    tagsEl.value = '';
+    nameEl.focus();
+    render();
+  }
+
+  function deleteDish(id) {
+    save(load().filter(d => d.id !== id));
+    render();
+  }
+
+  function render() {
+    const list = document.getElementById('list');
+    const dishes = load();
+    if (dishes.length === 0) {
+      list.innerHTML = '<li class="empty">まだ登録がありません</li>';
+      return;
+    }
+    list.innerHTML = '';
+    dishes.forEach(d => {
+      const li = document.createElement('li');
+      const left = document.createElement('div');
+      const nameDiv = document.createElement('div');
+      nameDiv.className = 'name';
+      nameDiv.textContent = d.name;
+      left.appendChild(nameDiv);
+      if (d.tags.length) {
+        const tagWrap = document.createElement('div');
+        tagWrap.className = 'tags';
+        d.tags.forEach(t => {
+          const span = document.createElement('span');
+          span.className = 'tag';
+          span.textContent = t;
+          tagWrap.appendChild(span);
+        });
+        left.appendChild(tagWrap);
+      }
+      const delBtn = document.createElement('button');
+      delBtn.className = 'del';
+      delBtn.textContent = '削除';
+      delBtn.onclick = () => deleteDish(d.id);
+      li.appendChild(left);
+      li.appendChild(delBtn);
+      list.appendChild(li);
+    });
+  }
+
+  render();
+</script>
+</body>
+</html>

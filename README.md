@@ -10,7 +10,7 @@
 
 ブラウザで動きます（スマートフォンでも動作します）。
 
-https://ri-mo-j.github.io/kondate-memo/kondate-memo.html
+https://ri-mo-j.github.io/kondate-memo/
 
 ## 機能
 
